@@ -3,7 +3,7 @@ import processing.video.*;
 // Create camera object
 Capture cam;
 
-// Overlay coords
+// Overlay coords, X & W are hoizontal, Y & H are vertical
 int ovlX, ovlY, ovlW, ovlH;
 
 // Button indicators (Green, Red, Yellow. Blue, Orange)
@@ -35,16 +35,18 @@ void setup() {
   */
   // Create display window
   size(320, 240);
+  frameRate(30);
   // Init camera
+  println(width, height);
   cam = new Capture(this, width, height);
   cam.start();     
   // Init overlay coords
-  ovlX = 25;
-  ovlY = height - 50;
-  ovlW = width / 3;
-  ovlH = 10;
+  ovlX = 118;
+  ovlY = 132;
+  ovlW = 79;
+  ovlH = 6;
   // Init button indicators
-  btnInd = new boolean[] {false, true, false, false, false};
+  btnInd = new boolean[] {false, false, false, false, false};
 }      
 
 // Runs every display window refresh
@@ -61,11 +63,7 @@ void draw() {
     // Display overlaycolor
     // Display btnIndexMax buttons (Green, Red, Yellow, Blue, Orange)
     for(int btn = 0; btn < btnIndexMax; btn++) {
-      // Display strum indicator
-      noFill();
-      stroke(255);
-      rect(ovlX + ovlW / 5 * btn, ovlY, ovlW / 5, ovlH);
-      // Process strum indicator
+      // Get strum indicator average color
       loadPixels();
       avgColor = pixels[(ovlY +1) * width + ovlX + ovlW / 5 * btn + 1];
       for(int h = ovlY + 1; h < ovlY + ovlH; h++) {
@@ -73,14 +71,11 @@ void draw() {
           avgColor = avgRGB(pixels[h * width + w]);
         }
       }
-      for(int h = ovlY + 1; h < ovlY + ovlH; h++) {
-        for(int w = ovlX + ovlW / 5 * btn + 1; w < ovlX + ovlW / 5 * (btn + 1); w++) {
-          pixels[h * width + w] = avgColor;
-        }
-      }
-      updatePixels();
+      // Display strum indicator
+      fill(avgColor);
+      stroke(255);
+      rect(ovlX + ovlW / 5 * btn, ovlY, ovlW / 5, ovlH);
       // Display button indicator
-      // Set button indicator color
       switch(btn) {
         case 0: // Green
           stroke(#00CC1E);
@@ -113,21 +108,56 @@ void draw() {
   }
 }
 
-// Runs when mouse button pressed
-void mousePressed() {
-  // Set upper-left coords
-  ovlX = mouseX;
-  ovlY = mouseY;
-}
-
+// Shift indicator
+boolean shftInd;
 // 
-void mouseDragged() {
-  // Set width and height coords
-  ovlW = min(max(mouseX - ovlX, width / 3), width / 2);
-  ovlH = min(max(mouseY - ovlY, 10), 15);
+void keyPressed() {
+  if (key == CODED) {
+    if (keyCode == SHIFT) {
+      shftInd = true;
+    }
+    else if (keyCode == DOWN) {
+      if (shftInd) {
+        ovlH++;
+      }
+      else {
+        ovlY++;
+      }
+    }
+    else if (keyCode == UP) {
+      if (shftInd) {
+        ovlH--;
+      }
+      else {
+        ovlY--;
+      }
+    }
+    else if (keyCode == RIGHT) {
+      if (shftInd) {
+        ovlW += btnIndexMax;
+      }
+      else {
+        ovlX++;
+      }
+    }
+    else if (keyCode == LEFT) {
+      if (shftInd) {
+        ovlW -= btnIndexMax;
+      }
+      else {
+        ovlX--;
+      }
+    }
+  }
 }
 
-void mouseReleased() {
+//
+void keyReleased() {
+  if (key == CODED) {
+    if (keyCode == SHIFT) {
+      shftInd = false;
+    }
+  }
 }
 
 // Average RGB
