@@ -11,7 +11,8 @@ int btnIndexMax = 5;
 boolean[] btnInd = new boolean[btnIndexMax];
 
 // Average color
-color avgColor;
+color[] avgColor = new color[btnIndexMax];
+color[] avgColorHist = new color[btnIndexMax];
 
 // Runs once after restart
 void setup() {
@@ -37,7 +38,6 @@ void setup() {
   size(320, 240);
   frameRate(30);
   // Init camera
-  println(width, height);
   cam = new Capture(this, width, height);
   cam.start();     
   // Init overlay coords
@@ -46,7 +46,13 @@ void setup() {
   ovlW = 79;
   ovlH = 6;
   // Init button indicators
-  btnInd = new boolean[] {false, false, false, false, false};
+  for (int btn = 0; btn < btnIndexMax; btn++) {
+    btnInd[btn] = false;
+  }
+  // Init average color history
+  for (int btn = 0; btn < btnIndexMax; btn++) {
+    avgColorHist[btn] = 0;
+  }
 }      
 
 // Runs every display window refresh
@@ -65,17 +71,24 @@ void draw() {
     for(int btn = 0; btn < btnIndexMax; btn++) {
       // Get strum indicator average color
       loadPixels();
-      avgColor = pixels[(ovlY +1) * width + ovlX + ovlW / 5 * btn + 1];
+      avgColor[btn] = pixels[(ovlY +1) * width + ovlX + ovlW / 5 * btn + 1];
       for(int h = ovlY + 1; h < ovlY + ovlH; h++) {
         for(int w = ovlX + ovlW / 5 * btn + 1; w < ovlX + ovlW / 5 * (btn + 1); w++) {
-          avgColor = avgRGB(pixels[h * width + w]);
+          avgColor[btn] = avgRGB(pixels[h * width + w], btn);
         }
       }
       // Display strum indicator
-      fill(avgColor);
+      fill(color(grayscale(avgColor[btn])));
       stroke(255);
       rect(ovlX + ovlW / 5 * btn, ovlY, ovlW / 5, ovlH);
-      // Display button indicator
+      // Process strum indicator
+      if (grayscale(avgColor[btn]) > 50) {
+        btnInd[btn] = true;
+      }
+      else {
+        btnInd[btn] = false;
+      }
+      // Display fret button indicator
       switch(btn) {
         case 0: // Green
           stroke(#00CC1E);
@@ -104,7 +117,7 @@ void draw() {
         noFill();
       }
       ellipse(ovlX + ovlW / btnIndexMax * btn + ovlW / btnIndexMax / 2, ovlY + ovlH + 10, 10, 10);
-    } 
+    }
   }
 }
 
@@ -161,14 +174,14 @@ void keyReleased() {
 }
 
 // Average RGB
-color avgRGB(color c){ 
+color avgRGB(color c, int btn) { 
   // Extract RGB values
   int r = (c >> 16) & 0xFF;
   int g = (c >> 8) & 0xFF;
   int b = c & 0xFF;
-  int ra = (avgColor >> 16) & 0xFF;
-  int ga = (avgColor >> 8) & 0xFF;
-  int ba = avgColor & 0xFF;
+  int ra = (avgColor[btn] >> 16) & 0xFF;
+  int ga = (avgColor[btn] >> 8) & 0xFF;
+  int ba = avgColor[btn] & 0xFF;
   return color((r + ra) / 2, (g + ga) / 2, (b + ba) / 2);
 }
 
@@ -181,7 +194,7 @@ int grayscale(color c){
  
   //typical NTSC color to luminosity conversion
   int intensity = int(0.2989*r + 0.5870*g + 0.1140*b);
-  if (intensity> 0) intensity=int(map(intensity,0,255,0,100));
+  //if (intensity> 0) intensity=int(map(intensity,0,255,0,100));
   return intensity;
 }
 
